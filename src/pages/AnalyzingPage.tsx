@@ -19,20 +19,27 @@ export default function AnalyzingPage() {
     if (called.current) return
     called.current = true
 
-    const imagesRaw = sessionStorage.getItem('eh-images')
-    const studentRaw = sessionStorage.getItem('eh-student')
+    let images: string[] = []
+    let student: StudentInfo | null = null
 
-    if (!imagesRaw || !studentRaw) {
+    try {
+      const imagesRaw = sessionStorage.getItem('eh-images')
+      const studentRaw = sessionStorage.getItem('eh-student')
+      if (!imagesRaw || !studentRaw) { navigate('/'); return }
+      images = JSON.parse(imagesRaw) as string[]
+      student = JSON.parse(studentRaw) as StudentInfo
+    } catch {
       navigate('/')
       return
     }
 
-    const images: string[] = JSON.parse(imagesRaw)
-    const student: StudentInfo = JSON.parse(studentRaw)
+    if (!images.length || !student) { navigate('/'); return }
 
-    // Simulate step progression
     const t1 = setTimeout(() => setStep(1), 5000)
-    const t2 = setTimeout(() => setStep(2), 15000)
+    const t2 = setTimeout(() => setStep(2), 20000)
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 55000)
 
     async function run() {
       try {
@@ -40,10 +47,10 @@ export default function AnalyzingPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ images, student }),
+          signal: controller.signal,
         })
 
-        clearTimeout(t1)
-        clearTimeout(t2)
+        clearTimeout(t1); clearTimeout(t2); clearTimeout(timeout)
 
         if (!res.ok) {
           let msg = `서버 오류 (HTTP ${res.status})`
@@ -56,20 +63,22 @@ export default function AnalyzingPage() {
 
         const report = await res.json()
         setStep(3)
-
         sessionStorage.removeItem('eh-images')
         sessionStorage.setItem('eh-report', JSON.stringify({ ...report, student }))
+        setTimeout(() => navigate('/result'), 800)
 
-        setTimeout(() => navigate('/result'), 1000)
       } catch (err) {
-        clearTimeout(t1)
-        clearTimeout(t2)
-        setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.')
+        clearTimeout(t1); clearTimeout(t2); clearTimeout(timeout)
+        if (err instanceof Error && err.name === 'AbortError') {
+          setError('분석 시간이 초과되었습니다 (55초). 이미지를 줄이고 다시 시도해주세요.')
+        } else {
+          setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.')
+        }
       }
     }
 
     run()
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(timeout); controller.abort() }
   }, [navigate])
 
   if (error) {
@@ -77,17 +86,13 @@ export default function AnalyzingPage() {
       <div className="min-h-screen bg-navy-50 flex flex-col items-center justify-center px-6 text-center">
         <div className="text-5xl mb-6">😔</div>
         <h2 className="text-lg font-extrabold text-navy mb-2">분석 중 오류가 발생했습니다</h2>
-        <p className="text-sm text-gray-500 mb-6 max-w-xs">{error}</p>
-        <div className="space-y-3 w-full max-w-xs">
-          <p className="text-xs text-gray-400">
-            {error.includes('OPENAI_API_KEY') || error.includes('API')
-              ? 'Vercel 환경 변수에 OPENAI_API_KEY를 설정해주세요.'
-              : '잠시 후 다시 시도해주세요.'}
-          </p>
-          <button onClick={() => navigate('/upload')} className="btn-outline w-full">
-            다시 시도하기
-          </button>
-        </div>
+        <p className="text-sm text-gray-600 mb-2 max-w-xs font-mono bg-gray-100 rounded-xl px-4 py-2">{error}</p>
+        <p className="text-xs text-gray-400 mb-6 max-w-xs">
+          위 오류 메시지를 캡처해서 전달해주시면 빠르게 수정할 수 있습니다.
+        </p>
+        <button onClick={() => navigate('/upload')} className="btn-gold w-full max-w-xs">
+          다시 시도하기
+        </button>
       </div>
     )
   }
@@ -96,7 +101,6 @@ export default function AnalyzingPage() {
 
   return (
     <div className="min-h-screen bg-navy flex flex-col items-center justify-center px-6 text-center">
-      {/* Animated icon */}
       <div className="relative mb-10">
         <div className="w-24 h-24 rounded-full border-4 border-navy-light border-t-gold animate-spin" />
         <div className="absolute inset-0 flex items-center justify-center">
@@ -109,7 +113,6 @@ export default function AnalyzingPage() {
       <h1 className="text-2xl font-extrabold text-white mb-2">{STEPS[step].label}</h1>
       <p className="text-navy-200 text-sm mb-10">{STEPS[step].sub}</p>
 
-      {/* Progress bar */}
       <div className="w-64 h-2 bg-navy-light rounded-full overflow-hidden mb-4">
         <div
           className="h-full bg-gold rounded-full transition-all duration-700"
@@ -118,15 +121,10 @@ export default function AnalyzingPage() {
       </div>
       <p className="text-gold font-bold text-sm">{pct}%</p>
 
-      {/* Step indicators */}
       <div className="flex gap-3 mt-10">
         {STEPS.map((s, i) => (
-          <div key={i} className={`text-xs font-semibold transition-all ${
-            i <= step ? 'text-gold' : 'text-navy-light'
-          }`}>
-            <div className={`w-2 h-2 rounded-full mx-auto mb-1 ${
-              i < step ? 'bg-gold' : i === step ? 'bg-gold animate-pulse' : 'bg-navy-light'
-            }`} />
+          <div key={i} className={`text-xs font-semibold transition-all ${i <= step ? 'text-gold' : 'text-navy-light'}`}>
+            <div className={`w-2 h-2 rounded-full mx-auto mb-1 ${i < step ? 'bg-gold' : i === step ? 'bg-gold animate-pulse' : 'bg-navy-light'}`} />
             {s.label.replace('...', '').replace('!', '')}
           </div>
         ))}

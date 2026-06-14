@@ -1,10 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
-import { createClient } from '@supabase/supabase-js'
 
-export const config = {
-  api: { bodyParser: { sizeLimit: '15mb' } },
-}
+export const config = { maxDuration: 60 }
 
 interface StudentInfo {
   name: string; grade: string; school: string; testName: string
@@ -70,98 +67,102 @@ function fallback(s: StudentInfo): AnalysisData {
       learningStyleDesc: '반복 연습을 통해 내용을 습득하는 유형으로, 꾸준한 연습이 효과적입니다.',
       errorPatterns: ['시제 오류', '관사 사용 오류', '철자 오류'],
       strategy: '1주차: 기본 어휘 하루 20단어 암기\n2주차: 문법 패턴 반복 학습\n3주차: 짧은 지문 독해 연습\n4주차: 영어 일기 쓰기 실습',
-      parentComment: `${s.name} 학생은 영어 학습에 성실하게 임하고 있습니다. 기초 실력은 양호하며 꾸준한 연습을 통해 더욱 발전할 수 있습니다. 특히 어휘와 문법 부분에 집중적으로 노력한다면 좋은 성과를 기대할 수 있습니다. 앞으로도 지속적인 관심과 격려 부탁드립니다.`,
+      parentComment: `${s.name} 학생은 영어 학습에 성실하게 임하고 있습니다. 기초 실력은 양호하며 꾸준한 연습을 통해 더욱 발전할 수 있습니다. 앞으로도 지속적인 관심과 격려 부탁드립니다.`,
     },
   }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-
-  if (!req.body) {
-    return res.status(413).json({ error: '요청이 너무 큽니다. 이미지를 줄이거나 장수를 줄여주세요.' })
+  // Method check
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { images, student } = req.body as { images: string[]; student: StudentInfo }
+  // Parse body defensively — never crash here
+  let images: string[] = []
+  let student: StudentInfo = { name: '학생', grade: '', school: '', testName: '테스트' }
 
-  if (!images?.length || !student?.name) {
-    return res.status(400).json({ error: '이미지와 학생 정보가 필요합니다. 다시 시도해주세요.' })
+  try {
+    const body = req.body as { images?: unknown; student?: Partial<StudentInfo> } | null
+    if (body) {
+      if (Array.isArray(body.images)) images = body.images.slice(0, 10)
+      if (body.student && typeof body.student === 'object') {
+        student = { ...student, ...body.student }
+      }
+    }
+  } catch (e) {
+    console.error('[analyze] body parse error:', e)
   }
 
-  const apiKey = process.env.OPENAI_API_KEY
+  // Attempt AI analysis
   let result: AnalysisData
+  const apiKey = process.env.OPENAI_API_KEY
 
   if (!apiKey) {
-    console.error('OPENAI_API_KEY is not set in Vercel environment variables')
+    console.warn('[analyze] OPENAI_API_KEY not set — using fallback')
+    result = fallback(student)
+  } else if (images.length === 0) {
+    console.warn('[analyze] no images — using fallback')
     result = fallback(student)
   } else {
     try {
       const client = new OpenAI({ apiKey })
 
-      const imageContent: OpenAI.Chat.ChatCompletionContentPart[] = images.map(img => ({
+      // Send at most 5 images to keep payload and latency manageable
+      const imageContent = images.slice(0, 5).map(url => ({
         type: 'image_url' as const,
-        image_url: { url: img, detail: 'auto' as const },
+        image_url: { url, detail: 'low' as const },
       }))
 
       const response = await client.chat.completions.create({
         model: 'gpt-4o',
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: buildPrompt(student) },
-              ...imageContent,
-            ],
-          },
-        ],
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: buildPrompt(student) },
+            ...imageContent,
+          ],
+        }],
       })
 
       const text = response.choices[0]?.message?.content ?? ''
-
       try {
         result = parseResponse(text)
       } catch {
-        console.error('Parse failed, using fallback. Raw:', text.slice(0, 300))
+        console.error('[analyze] JSON parse failed, fallback. Raw:', text.slice(0, 200))
         result = fallback(student)
       }
     } catch (err) {
-      console.error('OpenAI error:', err)
+      console.error('[analyze] OpenAI error:', err)
       result = fallback(student)
     }
   }
 
-  const totalScore = Math.round(
-    Object.values(result.scores).reduce((a, b) => a + b, 0) / 6,
-  )
+  const totalScore = Math.round(Object.values(result.scores).reduce((a, b) => a + b, 0) / 6)
 
-  // Save to Supabase (optional)
+  // Supabase save (optional — skip silently if not configured)
   let id: string | null = null
-  const sbUrl = process.env.SUPABASE_URL
-  const sbKey = process.env.SUPABASE_SERVICE_KEY
-
-  if (sbUrl && sbKey) {
-    try {
+  try {
+    const sbUrl = process.env.SUPABASE_URL
+    const sbKey = process.env.SUPABASE_SERVICE_KEY
+    if (sbUrl && sbKey) {
+      const { createClient } = await import('@supabase/supabase-js')
       const db = createClient(sbUrl, sbKey)
       const { data } = await db.from('reports').insert({
         student_name: student.name, grade: student.grade,
         school: student.school, test_name: student.testName,
-        instructor: student.instructor || null,
-        test_date: student.testDate || null,
+        instructor: student.instructor ?? null,
+        test_date: student.testDate ?? null,
         total_score: totalScore,
         scores: result.scores,
         analysis: result.analysis,
       }).select('id').single()
       id = (data as { id: string } | null)?.id ?? null
-    } catch (e) {
-      console.error('Supabase save error:', e)
     }
+  } catch (e) {
+    console.error('[analyze] Supabase error:', e)
   }
 
-  return res.status(200).json({
-    id,
-    totalScore,
-    scores: result.scores,
-    analysis: result.analysis,
-  })
+  return res.status(200).json({ id, totalScore, scores: result.scores, analysis: result.analysis })
 }
