@@ -33,34 +33,49 @@ export default function ResultPage() {
         import('jspdf'),
       ])
 
-      const canvas = await html2canvas(reportRef.current, {
+      // Wait for fonts and SVG paint
+      await document.fonts.ready
+      await new Promise(r => setTimeout(r, 150))
+
+      const el = reportRef.current
+      const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
+        windowWidth: 800,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
       })
 
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF('p', 'mm', 'a4')
+      const imgData = canvas.toDataURL('image/jpeg', 0.97)
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
+
       const imgW = pageW
-      const imgH = (canvas.height * imgW) / canvas.width
+      const imgH = (canvas.height / canvas.width) * imgW
 
-      let position = 0
-      let remaining = imgH
+      let yOffset = 0
+      let pagesAdded = 0
 
-      while (remaining > 0) {
-        if (position > 0) pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, -position, imgW, imgH)
-        position += pageH
-        remaining -= pageH
+      while (yOffset < imgH) {
+        if (pagesAdded > 0) pdf.addPage()
+        pdf.addImage(imgData, 'JPEG', 0, -yOffset, imgW, imgH, undefined, 'FAST')
+        yOffset += pageH
+        pagesAdded++
       }
 
       const grade = totalScoreGrade(report.totalScore)
       pdf.save(`${report.student.name}_${report.student.testName}_${grade}.pdf`)
     } catch (e) {
       console.error('PDF error:', e)
+      alert('PDF 생성 실패. 인쇄 버튼으로 PDF를 저장해주세요.')
       window.print()
     } finally {
       setDownloading(false)

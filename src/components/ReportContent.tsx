@@ -74,7 +74,7 @@ const ReportContent = forwardRef<HTMLDivElement, Props>(({ report }, ref) => {
             <p className="text-xs text-gray-400">종합 점수</p>
           </div>
           {/* Radar chart */}
-          <HexagonChart scores={scores} size={220} />
+          <HexagonChart scores={scores} />
         </div>
 
         {/* ── Domain scores ─────────────────────────────────── */}
