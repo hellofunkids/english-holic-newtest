@@ -43,13 +43,75 @@
   }
 }
 
-/* ── Print styles ─────────────────────────────────────────────── */
+/* ── Print / PDF styles ─────────────────────────────────────── */
 @media print {
-  .no-print { display: none !important; }
-  .print-only { display: block !important; }
-  body { background: white !important; }
-  .card { box-shadow: none !important; border: 1px solid #e2e8f0; }
-  @page { size: A4; margin: 12mm 15mm 15mm 15mm; }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Strip outer page background */
+  .bg-navy-50 {
+    background: white !important;
+  }
+
+  .min-h-screen {
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Report wrapper — full A4 width, no padding */
+  #report-print-wrapper {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Report card itself — full bleed */
+  #report-print-wrapper > * {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Remove shadows */
+  [class*='shadow'] {
+    box-shadow: none !important;
+  }
+
+  /* Smart page breaks — avoid splitting sections */
+  section,
+  .grid-cols-2,
+  .rounded-2xl,
+  .space-y-3 > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Start strategy section on a new area if needed */
+  .bg-navy.rounded-2xl {
+    break-before: auto;
+  }
 }
 
 .print-only { display: none; }
