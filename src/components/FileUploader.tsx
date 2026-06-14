@@ -85,7 +85,7 @@ export default function FileUploader({ files, onChange }: Props) {
       >
         <Upload className="w-10 h-10 mx-auto mb-3 text-navy/30" />
         <p className="text-sm font-semibold text-gray-600">파일을 드래그하거나 탭하여 선택</p>
-        <p className="text-xs text-gray-400 mt-1">이미지 최대 10장 · PDF 1개 · JPG, PNG, PDF</p>
+        <p className="text-xs text-gray-400 mt-1">이미지 최대 10장 · PDF 1개 · 아이폰 사진 포함</p>
       </div>
 
       {/* Upload buttons */}
@@ -120,7 +120,7 @@ export default function FileUploader({ files, onChange }: Props) {
 
       {/* Hidden inputs */}
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleInputChange} />
-      <input ref={galleryRef} type="file" accept="image/jpg,image/jpeg,image/png" multiple className="hidden" onChange={handleInputChange} />
+      <input ref={galleryRef} type="file" accept="image/*,.heic,.heif" multiple className="hidden" onChange={handleInputChange} />
       <input ref={pdfRef} type="file" accept="application/pdf" className="hidden" onChange={handleInputChange} />
 
       {/* Thumbnail grid */}

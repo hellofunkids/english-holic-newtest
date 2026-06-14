@@ -6,6 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export async function compressImage(file: File, maxPx = 1024, quality = 0.8): Promise<string> {
+  // For HEIC/HEIF (iPhone), createObjectURL still works in modern Safari
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
@@ -20,7 +21,14 @@ export async function compressImage(file: File, maxPx = 1024, quality = 0.8): Pr
       URL.revokeObjectURL(url)
       resolve(canvas.toDataURL('image/jpeg', quality))
     }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')) }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      // Fallback: read as base64 directly (works for most HEIC on iOS Safari)
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('이미지를 읽을 수 없습니다.'))
+      reader.readAsDataURL(file)
+    }
     img.src = url
   })
 }
