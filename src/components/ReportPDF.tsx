@@ -4,147 +4,152 @@ import {
 } from '@react-pdf/renderer'
 import type { Report, Scores } from '../types'
 
-Font.register({
-  family: 'NotoSansKR',
-  fonts: [
-    { src: '/fonts/NotoSansKR-Regular.ttf', fontWeight: 400 },
-    { src: '/fonts/NotoSansKR-Bold.ttf',    fontWeight: 700 },
-  ],
-})
-
+// ── constants ──────────────────────────────────────────────────
 const NAVY   = '#1B3A6B'
 const NAVY2  = '#0F2547'
-const NAVY50 = '#F0F4FF'
+const NAVY50 = '#EEF2FF'
 const GOLD   = '#C9A84C'
 const WHITE  = '#FFFFFF'
-const GRAY3  = '#D1D5DB'
+const GRAY2  = '#E5E7EB'
 const GRAY5  = '#6B7280'
 const GRAY7  = '#374151'
+const GREEN  = '#10B981'
+const RED    = '#EF4444'
 
 const DOMAINS = [
-  { key: 'vocabulary' as const, labelKo: '어휘력', label: 'Vocabulary' },
-  { key: 'grammar'    as const, labelKo: '문법',   label: 'Grammar' },
-  { key: 'reading'    as const, labelKo: '독해',   label: 'Reading' },
-  { key: 'writing'    as const, labelKo: '쓰기',   label: 'Writing' },
-  { key: 'sentence'   as const, labelKo: '문장구조', label: 'Sentence' },
-  { key: 'practical'  as const, labelKo: '활용능력', label: 'Practical' },
+  { key: 'vocabulary' as const, ko: '어휘력', en: 'Vocabulary' },
+  { key: 'grammar'    as const, ko: '문법',   en: 'Grammar' },
+  { key: 'reading'    as const, ko: '독해',   en: 'Reading' },
+  { key: 'writing'    as const, ko: '쓰기',   en: 'Writing' },
+  { key: 'sentence'   as const, ko: '문장구조', en: 'Sentence' },
+  { key: 'practical'  as const, ko: '활용능력', en: 'Practical' },
 ]
 
-function scoreColor(s: number) {
-  if (s >= 90) return '#10B981'
-  if (s >= 75) return NAVY
-  if (s >= 60) return GOLD
-  return '#EF4444'
+function sc(v: number) {
+  return v >= 90 ? GREEN : v >= 75 ? NAVY : v >= 60 ? GOLD : RED
+}
+function sl(v: number) {
+  return v >= 90 ? '우수' : v >= 75 ? '양호' : v >= 60 ? '보통' : '노력요망'
+}
+function grade(v: number) {
+  return v >= 95 ? 'A+' : v >= 90 ? 'A' : v >= 80 ? 'B+' : v >= 75 ? 'B' : v >= 60 ? 'C' : 'D'
+}
+function gc(v: number) {
+  return v >= 90 ? GREEN : v >= 75 ? NAVY : v >= 60 ? GOLD : RED
 }
 
-function scoreLabel(s: number) {
-  if (s >= 90) return '우수'
-  if (s >= 75) return '양호'
-  if (s >= 60) return '보통'
-  return '노력요망'
-}
+// ── styles ─────────────────────────────────────────────────────
+const S = StyleSheet.create({
+  page: { fontFamily: 'NotoSansKR', backgroundColor: WHITE },
 
-function totalScoreGrade(s: number) {
-  if (s >= 95) return 'A+'
-  if (s >= 90) return 'A'
-  if (s >= 80) return 'B+'
-  if (s >= 70) return 'B'
-  if (s >= 60) return 'C'
-  return 'D'
-}
-
-function gradeColor(s: number) {
-  if (s >= 90) return '#10B981'
-  if (s >= 75) return NAVY
-  if (s >= 60) return GOLD
-  return '#EF4444'
-}
-
-const F = 'NotoSansKR'
-
-const s = StyleSheet.create({
-  page: { fontFamily: F, backgroundColor: WHITE, paddingBottom: 20 },
-  // Header
-  header: { backgroundColor: NAVY, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerBadge: { fontSize: 8, color: GOLD, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 },
-  headerTitle: { fontSize: 18, color: WHITE, fontWeight: 700 },
-  headerSub: { fontSize: 9, color: '#C0D0F0', marginTop: 3 },
-  gradeBadge: {
-    width: 52, height: 52, borderRadius: 10,
+  // header
+  hdr:  { backgroundColor: NAVY, paddingHorizontal: 28, paddingTop: 22, paddingBottom: 18 },
+  hRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  hBadge: { fontSize: 7.5, color: GOLD, fontWeight: 700, letterSpacing: 1.5, marginBottom: 5 },
+  hTitle: { fontSize: 20, color: WHITE, fontWeight: 700 },
+  hSub:   { fontSize: 9, color: '#C0D0F0', marginTop: 3 },
+  gBadge: {
+    width: 54, height: 54, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2,
   },
-  gradeText: { fontSize: 22, fontWeight: 700 },
-  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, gap: 0 },
+  gText: { fontSize: 24, fontWeight: 700 },
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 14 },
   infoItem: { width: '50%', flexDirection: 'row', marginBottom: 5 },
-  infoLabel: { fontSize: 8, color: '#C0D0F0', width: 36 },
-  infoValue: { fontSize: 8, color: WHITE, fontWeight: 700 },
-  // Body
-  body: { paddingHorizontal: 24, paddingTop: 20 },
-  // Score row
-  scoreRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
-  circleWrap: { alignItems: 'center', flex: 1 },
-  circleLabel: { fontSize: 11, fontWeight: 700, marginTop: 6 },
-  circleSubLabel: { fontSize: 8, color: GRAY5, marginTop: 2 },
-  chartWrap: { flex: 1, alignItems: 'center' },
-  // Domain bars
-  section: { marginBottom: 18 },
-  sectionTitle: { fontSize: 12, fontWeight: 700, color: NAVY, borderBottomWidth: 2, borderBottomColor: GOLD, paddingBottom: 5, marginBottom: 10 },
-  barRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 7 },
-  barLabel: { width: 58, fontSize: 9, fontWeight: 700, color: GRAY7 },
-  barSubLabel: { width: 42, fontSize: 7, color: GRAY5 },
-  barTrack: { flex: 1, height: 7, backgroundColor: '#F3F4F6', borderRadius: 4, overflow: 'hidden' },
-  barFill: { height: 7, borderRadius: 4 },
-  barScore: { width: 24, fontSize: 10, fontWeight: 700, textAlign: 'right' },
-  barBadge: { marginLeft: 6, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 10 },
-  barBadgeText: { fontSize: 7, fontWeight: 700 },
-  // Summary
-  summaryBox: { backgroundColor: NAVY50, borderLeftWidth: 4, borderLeftColor: NAVY, borderRadius: 8, padding: 12, marginBottom: 18 },
-  summaryText: { fontSize: 9, color: GRAY7, lineHeight: 1.7 },
-  // Two col
-  twoCol: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  col: { flex: 1, borderRadius: 8, padding: 12 },
-  colTitle: { fontSize: 10, fontWeight: 700, marginBottom: 8 },
-  colItem: { flexDirection: 'row', marginBottom: 5, gap: 4 },
-  colBullet: { fontSize: 9, fontWeight: 700 },
-  colText: { fontSize: 9, color: GRAY7, flex: 1, lineHeight: 1.5 },
-  // Learning style
-  styleBox: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, marginBottom: 18, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  styleIcon: { fontSize: 22 },
-  styleTitle: { fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 },
-  styleDesc: { fontSize: 9, color: GRAY7, lineHeight: 1.7 },
-  // Error patterns
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  chip: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
-  chipText: { fontSize: 8, color: '#DC2626', fontWeight: 700 },
-  // Strategy
-  strategyBox: { backgroundColor: NAVY2, borderRadius: 8, padding: 14, marginBottom: 18 },
-  strategyTitle: { fontSize: 10, fontWeight: 700, color: GOLD, marginBottom: 8 },
-  strategyText: { fontSize: 9, color: '#C0D0F0', lineHeight: 1.8 },
-  // Parent comment
-  commentBox: { borderWidth: 2, borderColor: '#E8CC7A', borderRadius: 8, padding: 14, backgroundColor: '#FFFDF5', marginBottom: 18 },
-  commentTitle: { fontSize: 10, fontWeight: 700, color: GOLD, marginBottom: 6 },
-  commentText: { fontSize: 9, color: GRAY7, lineHeight: 1.7 },
-  // Signature
-  sigRow: { flexDirection: 'row', gap: 20, marginTop: 8, marginBottom: 10 },
+  infoLbl: { fontSize: 8.5, color: '#B0C4DE', width: 38 },
+  infoVal: { fontSize: 8.5, color: WHITE, fontWeight: 700 },
+
+  // body
+  body: { paddingHorizontal: 28, paddingTop: 18 },
+
+  // score row
+  sRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 14 },
+  sLeft:  { flex: 1, alignItems: 'center' },
+  sRight: { flex: 1, alignItems: 'center' },
+
+  // score circle
+  sCirc: {
+    width: 110, height: 110, borderRadius: 55,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 5,
+  },
+  sNum:  { fontSize: 34, fontWeight: 700, lineHeight: 1 },
+  sDen:  { fontSize: 9, color: GRAY5, marginTop: 2 },
+  sGrd:  { fontSize: 13, fontWeight: 700, marginTop: 8 },
+  sLbl:  { fontSize: 9, color: GRAY5, marginTop: 2 },
+
+  // score legend
+  hexLeg: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 6, justifyContent: 'center', paddingHorizontal: 4 },
+  legItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  legDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: GOLD },
+  legTxt:  { fontSize: 8, color: NAVY, fontWeight: 700 },
+
+  // section
+  sec:   { marginBottom: 16 },
+  secT:  { fontSize: 13, fontWeight: 700, color: NAVY, borderBottomWidth: 2, borderBottomColor: GOLD, paddingBottom: 5, marginBottom: 10 },
+
+  // bars
+  bRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  bKo:   { width: 55, fontSize: 10, fontWeight: 700, color: GRAY7 },
+  bEn:   { width: 48, fontSize: 8, color: GRAY5 },
+  bTrack:{ flex: 1, height: 9, backgroundColor: '#F3F4F6', borderRadius: 5, overflow: 'hidden' },
+  bFill: { height: 9, borderRadius: 5 },
+  bBadge:{ marginLeft: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 },
+  bBTxt: { fontSize: 7.5, fontWeight: 700 },
+  bSc:   { width: 26, fontSize: 11, fontWeight: 700, textAlign: 'right' },
+
+  // summary
+  smBox: { backgroundColor: NAVY50, borderLeftWidth: 4, borderLeftColor: NAVY, borderRadius: 6, padding: 12 },
+  smTxt: { fontSize: 10, color: GRAY7, lineHeight: 1.7 },
+
+  // 2-col
+  cols:  { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  col:   { flex: 1, borderRadius: 8, padding: 12 },
+  colT:  { fontSize: 11, fontWeight: 700, marginBottom: 7 },
+  colLi: { flexDirection: 'row', marginBottom: 5, gap: 4 },
+  colN:  { fontSize: 9.5, fontWeight: 700 },
+  colTx: { fontSize: 9.5, color: GRAY7, flex: 1, lineHeight: 1.55 },
+
+  // style box
+  stBox: { borderWidth: 1, borderColor: GRAY2, borderRadius: 8, padding: 12, flexDirection: 'row', gap: 10 },
+  stTit: { fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 },
+  stTxt: { fontSize: 9.5, color: GRAY7, lineHeight: 1.65 },
+
+  // chips
+  chipW: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  chip:  { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 },
+  chipT: { fontSize: 8.5, color: '#DC2626', fontWeight: 700 },
+
+  // strategy
+  strBox: { backgroundColor: NAVY2, borderRadius: 8, padding: 14 },
+  strT:   { fontSize: 11, fontWeight: 700, color: GOLD, marginBottom: 8 },
+  strTx:  { fontSize: 9.5, color: '#C0D0F0', lineHeight: 1.85 },
+
+  // comment
+  cmBox: { borderWidth: 2, borderColor: '#E8CC7A', borderRadius: 8, padding: 14, backgroundColor: '#FFFDF5' },
+  cmT:   { fontSize: 11, fontWeight: 700, color: '#A88830', marginBottom: 6 },
+  cmTx:  { fontSize: 9.5, color: GRAY7, lineHeight: 1.7 },
+
+  // sig
+  sigRow: { flexDirection: 'row', gap: 20, marginTop: 10, marginBottom: 8 },
   sigBox: { flex: 1, alignItems: 'center' },
-  sigLine: { borderBottomWidth: 1.5, borderBottomColor: GRAY3, borderStyle: 'dashed', width: '100%', height: 36, marginBottom: 4 },
-  sigLabel: { fontSize: 8, color: GRAY5, textAlign: 'center' },
-  footer: { fontSize: 7, color: GRAY3, textAlign: 'center', marginTop: 6 },
+  sigLn:  { borderBottomWidth: 1.5, borderBottomColor: GRAY2, borderStyle: 'dashed', width: '100%', height: 36, marginBottom: 4 },
+  sigLbl: { fontSize: 8.5, color: GRAY5, textAlign: 'center' },
+
+  footer: { fontSize: 7.5, color: GRAY2, textAlign: 'center', marginTop: 6, marginBottom: 20 },
 })
 
-// ── Hexagon Chart ──────────────────────────────────────────────
+// ── Hexagon SVG ────────────────────────────────────────────────
 function HexSvg({ scores }: { scores: Scores }) {
-  const W = 160, H = 150
-  const cx = 80, cy = 74, R = 52, labelR = 72
+  const W = 190, H = 178
+  const cx = 95, cy = 86, R = 60
   const n = DOMAINS.length
   const angles = DOMAINS.map((_, i) => Math.PI / 2 - (2 * Math.PI * i) / n)
-  const levels = [20, 40, 60, 80, 100]
 
   function pt(r: number, a: number) {
     return { x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) }
   }
-  function polyPts(r: number) {
+  function ring(r: number) {
     return angles.map(a => { const p = pt(r, a); return `${p.x},${p.y}` }).join(' ')
   }
 
@@ -155,206 +160,185 @@ function HexSvg({ scores }: { scores: Scores }) {
 
   return (
     <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-      {/* Background */}
-      <Polygon points={polyPts(R)} fill="#EEF2FF" />
-      {/* Grid rings */}
-      {levels.map(lv => (
-        <Polygon key={lv} points={polyPts((lv / 100) * R)}
+      <Polygon points={ring(R)} fill={NAVY50} />
+      {[20, 40, 60, 80, 100].map(lv => (
+        <Polygon key={lv} points={ring((lv / 100) * R)}
           fill="none" stroke="#BFDBFE" strokeWidth={lv === 100 ? 1.2 : 0.7} />
       ))}
-      {/* Spokes */}
       {angles.map((a, i) => {
         const p = pt(R, a)
         return <Line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#BFDBFE" strokeWidth={0.7} />
       })}
-      {/* Score polygon */}
-      <Polygon points={scorePts} fill={NAVY} fillOpacity={0.18} stroke={GOLD} strokeWidth={1.8} />
-      {/* Dots */}
+      <Polygon points={scorePts} fill={NAVY} fillOpacity={0.18} stroke={GOLD} strokeWidth={2} />
       {DOMAINS.map((d, i) => {
         const p = pt((scores[d.key] / 100) * R, angles[i])
-        return <Circle key={i} cx={p.x} cy={p.y} r={3} fill={GOLD} stroke={WHITE} strokeWidth={1} />
+        return <Circle key={i} cx={p.x} cy={p.y} r={3.5} fill={GOLD} stroke={WHITE} strokeWidth={1} />
       })}
     </Svg>
   )
 }
 
-// ── Score circle ───────────────────────────────────────────────
-function ScoreCircle({ score }: { score: number }) {
-  const gc = gradeColor(score)
-  const grade = totalScoreGrade(score)
+// ── Document ───────────────────────────────────────────────────
+function ReportDoc({ report }: { report: Report }) {
+  const { student: st, totalScore, scores, analysis } = report
+  const g  = grade(totalScore)
+  const gc2 = gc(totalScore)
 
   return (
-    <View style={s.circleWrap}>
-      <View style={{
-        width: 100, height: 100, borderRadius: 50,
-        borderWidth: 5, borderColor: gc,
-        backgroundColor: gc + '18',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Text style={{ fontSize: 30, fontWeight: 700, color: gc, lineHeight: 1 }}>{score}</Text>
-        <Text style={{ fontSize: 8, color: GRAY5, marginTop: 2 }}>/ 100</Text>
-      </View>
-      <Text style={[s.circleLabel, { color: gc }]}>{grade} 등급</Text>
-      <Text style={s.circleSubLabel}>종합 점수</Text>
-    </View>
-  )
-}
+    <Document title={`${st.name} 어취브먼트 레포트`} author="영어홀릭">
+      <Page size="A4" style={S.page}>
 
-// ── Main document ──────────────────────────────────────────────
-export function ReportDocument({ report }: { report: Report }) {
-  const { student, totalScore, scores, analysis } = report
-  const grade = totalScoreGrade(totalScore)
-  const gc = gradeColor(totalScore)
-
-  return (
-    <Document title={`${student.name} 어취브먼트 레포트`} author="영어홀릭">
-      <Page size="A4" style={s.page}>
-
-        {/* ── HEADER ─────────────────────────────────────────── */}
-        <View style={s.header}>
-          <View style={s.headerRow}>
+        {/* ── HEADER ── */}
+        <View style={S.hdr}>
+          <View style={S.hRow}>
             <View style={{ flex: 1 }}>
-              <Text style={s.headerBadge}>영어홀릭 ACHIEVEMENT REPORT</Text>
-              <Text style={s.headerTitle}>어취브먼트 테스트 레포트</Text>
-              <Text style={s.headerSub}>English Achievement Test Report</Text>
+              <Text style={S.hBadge}>영어홀릭 ACHIEVEMENT REPORT</Text>
+              <Text style={S.hTitle}>어취브먼트 테스트 레포트</Text>
+              <Text style={S.hSub}>English Achievement Test Report</Text>
             </View>
-            <View style={[s.gradeBadge, { backgroundColor: gc + '30', borderWidth: 2, borderColor: gc }]}>
-              <Text style={[s.gradeText, { color: gc }]}>{grade}</Text>
+            <View style={[S.gBadge, { backgroundColor: gc2 + '28', borderColor: gc2 }]}>
+              <Text style={[S.gText, { color: gc2 }]}>{g}</Text>
             </View>
           </View>
-          <View style={s.infoGrid}>
-            <View style={s.infoItem}><Text style={s.infoLabel}>학생</Text><Text style={s.infoValue}>{student.name}</Text></View>
-            <View style={s.infoItem}><Text style={s.infoLabel}>학년</Text><Text style={s.infoValue}>{student.grade}</Text></View>
-            <View style={s.infoItem}><Text style={s.infoLabel}>학교</Text><Text style={s.infoValue}>{student.school}</Text></View>
-            <View style={s.infoItem}><Text style={s.infoLabel}>테스트</Text><Text style={s.infoValue}>{student.testName}</Text></View>
-            {student.instructor && <View style={s.infoItem}><Text style={s.infoLabel}>강사</Text><Text style={s.infoValue}>{student.instructor}</Text></View>}
-            {student.testDate && <View style={s.infoItem}><Text style={s.infoLabel}>날짜</Text><Text style={s.infoValue}>{student.testDate}</Text></View>}
+          <View style={S.infoGrid}>
+            <View style={S.infoItem}><Text style={S.infoLbl}>학생</Text><Text style={S.infoVal}>{st.name}</Text></View>
+            <View style={S.infoItem}><Text style={S.infoLbl}>학년</Text><Text style={S.infoVal}>{st.grade}</Text></View>
+            <View style={S.infoItem}><Text style={S.infoLbl}>학교</Text><Text style={S.infoLbl}><Text style={S.infoVal}>{st.school}</Text></Text></View>
+            <View style={S.infoItem}><Text style={S.infoLbl}>테스트</Text><Text style={S.infoVal}>{st.testName}</Text></View>
+            {st.instructor ? <View style={S.infoItem}><Text style={S.infoLbl}>강사</Text><Text style={S.infoVal}>{st.instructor}</Text></View> : null}
+            {st.testDate   ? <View style={S.infoItem}><Text style={S.infoLbl}>날짜</Text><Text style={S.infoVal}>{st.testDate}</Text></View> : null}
           </View>
         </View>
 
-        {/* ── BODY ───────────────────────────────────────────── */}
-        <View style={s.body}>
+        {/* ── BODY ── */}
+        <View style={S.body}>
 
           {/* Score + Chart */}
-          <View style={s.scoreRow}>
-            <ScoreCircle score={totalScore} />
-            <View style={s.chartWrap}>
+          <View style={S.sRow}>
+            <View style={S.sLeft}>
+              <View style={[S.sCirc, { backgroundColor: gc2 + '15', borderColor: gc2 }]}>
+                <Text style={[S.sNum, { color: gc2 }]}>{totalScore}</Text>
+                <Text style={S.sDen}>/ 100</Text>
+              </View>
+              <Text style={[S.sGrd, { color: gc2 }]}>{g} 등급</Text>
+              <Text style={S.sLbl}>종합 점수</Text>
+            </View>
+            <View style={S.sRight}>
               <HexSvg scores={scores} />
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4, justifyContent: 'center' }}>
+              <View style={S.hexLeg}>
                 {DOMAINS.map(d => (
-                  <Text key={d.key} style={{ fontSize: 7, color: NAVY, fontWeight: 700 }}>
-                    {d.labelKo} {scores[d.key]}
-                  </Text>
+                  <View key={d.key} style={S.legItem}>
+                    <View style={S.legDot} />
+                    <Text style={S.legTxt}>{d.ko} {scores[d.key]}</Text>
+                  </View>
                 ))}
               </View>
             </View>
           </View>
 
-          {/* Domain Bars */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>영역별 성취도</Text>
+          {/* Domain bars */}
+          <View style={S.sec}>
+            <Text style={S.secT}>영역별 성취도</Text>
             {DOMAINS.map(d => {
-              const sc = scores[d.key]
-              const col = scoreColor(sc)
-              const lbl = scoreLabel(sc)
+              const v = scores[d.key], c = sc(v), l = sl(v)
               return (
-                <View key={d.key} style={s.barRow}>
-                  <Text style={s.barLabel}>{d.labelKo}</Text>
-                  <Text style={s.barSubLabel}>{d.label}</Text>
-                  <View style={s.barTrack}>
-                    <View style={[s.barFill, { width: `${sc}%`, backgroundColor: col }]} />
+                <View key={d.key} style={S.bRow}>
+                  <Text style={S.bKo}>{d.ko}</Text>
+                  <Text style={S.bEn}>{d.en}</Text>
+                  <View style={S.bTrack}>
+                    <View style={[S.bFill, { width: `${v}%`, backgroundColor: c }]} />
                   </View>
-                  <View style={[s.barBadge, { backgroundColor: col + '20' }]}>
-                    <Text style={[s.barBadgeText, { color: col }]}>{lbl}</Text>
+                  <View style={[S.bBadge, { backgroundColor: c + '20' }]}>
+                    <Text style={[S.bBTxt, { color: c }]}>{l}</Text>
                   </View>
-                  <Text style={[s.barScore, { color: col }]}>{sc}</Text>
+                  <Text style={[S.bSc, { color: c }]}>{v}</Text>
                 </View>
               )
             })}
           </View>
 
           {/* Summary */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>종합 평가</Text>
-            <View style={s.summaryBox}>
-              <Text style={s.summaryText}>{analysis.summary}</Text>
+          <View style={S.sec}>
+            <Text style={S.secT}>종합 평가</Text>
+            <View style={S.smBox}>
+              <Text style={S.smTxt}>{analysis.summary}</Text>
             </View>
           </View>
 
           {/* Strengths & Weaknesses */}
-          <View style={s.twoCol}>
-            <View style={[s.col, { backgroundColor: '#F0FDF4', borderLeftWidth: 3, borderLeftColor: '#10B981' }]}>
-              <Text style={[s.colTitle, { color: '#065F46' }]}>💪 강점</Text>
-              {analysis.strengths.map((str, i) => (
-                <View key={i} style={s.colItem}>
-                  <Text style={[s.colBullet, { color: '#10B981' }]}>{i + 1}.</Text>
-                  <Text style={s.colText}>{str}</Text>
+          <View style={S.cols}>
+            <View style={[S.col, { backgroundColor: '#F0FDF4', borderLeftWidth: 3, borderLeftColor: GREEN }]}>
+              <Text style={[S.colT, { color: '#065F46' }]}>강점</Text>
+              {analysis.strengths.map((t, i) => (
+                <View key={i} style={S.colLi}>
+                  <Text style={[S.colN, { color: GREEN }]}>{i + 1}.</Text>
+                  <Text style={S.colTx}>{t}</Text>
                 </View>
               ))}
             </View>
-            <View style={[s.col, { backgroundColor: '#FFFBEB', borderLeftWidth: 3, borderLeftColor: GOLD }]}>
-              <Text style={[s.colTitle, { color: '#92400E' }]}>📌 개선 영역</Text>
-              {analysis.weaknesses.map((w, i) => (
-                <View key={i} style={s.colItem}>
-                  <Text style={[s.colBullet, { color: GOLD }]}>{i + 1}.</Text>
-                  <Text style={s.colText}>{w}</Text>
+            <View style={[S.col, { backgroundColor: '#FFFBEB', borderLeftWidth: 3, borderLeftColor: GOLD }]}>
+              <Text style={[S.colT, { color: '#92400E' }]}>개선 영역</Text>
+              {analysis.weaknesses.map((t, i) => (
+                <View key={i} style={S.colLi}>
+                  <Text style={[S.colN, { color: GOLD }]}>{i + 1}.</Text>
+                  <Text style={S.colTx}>{t}</Text>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* Learning Style */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>학습 성향</Text>
-            <View style={s.styleBox}>
-              <View>
-                <Text style={s.styleTitle}>{analysis.learningStyle}</Text>
-                <Text style={s.styleDesc}>{analysis.learningStyleDesc}</Text>
+          {/* Learning style */}
+          <View style={S.sec}>
+            <Text style={S.secT}>학습 성향</Text>
+            <View style={S.stBox}>
+              <View style={{ flex: 1 }}>
+                <Text style={S.stTit}>{analysis.learningStyle}</Text>
+                <Text style={S.stTxt}>{analysis.learningStyleDesc}</Text>
               </View>
             </View>
           </View>
 
-          {/* Error Patterns */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>실수 패턴 분석</Text>
-            <View style={s.chipWrap}>
+          {/* Error patterns */}
+          <View style={S.sec}>
+            <Text style={S.secT}>실수 패턴 분석</Text>
+            <View style={S.chipW}>
               {analysis.errorPatterns.map((p, i) => (
-                <View key={i} style={s.chip}>
-                  <Text style={s.chipText}>{p}</Text>
+                <View key={i} style={S.chip}>
+                  <Text style={S.chipT}>{p}</Text>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* 4-Week Strategy */}
-          <View style={s.section}>
-            <View style={s.strategyBox}>
-              <Text style={s.strategyTitle}>📅 향후 4주 학습 전략</Text>
-              <Text style={s.strategyText}>{analysis.strategy}</Text>
+          {/* Strategy */}
+          <View style={S.sec}>
+            <View style={S.strBox}>
+              <Text style={S.strT}>향후 4주 학습 전략</Text>
+              <Text style={S.strTx}>{analysis.strategy}</Text>
             </View>
           </View>
 
-          {/* Parent Comment */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>학부모 상담 코멘트</Text>
-            <View style={s.commentBox}>
-              <Text style={s.commentText}>{analysis.parentComment}</Text>
+          {/* Parent comment */}
+          <View style={S.sec}>
+            <Text style={S.secT}>학부모 상담 코멘트</Text>
+            <View style={S.cmBox}>
+              <Text style={S.cmTx}>{analysis.parentComment}</Text>
             </View>
           </View>
 
           {/* Signature */}
-          <View style={s.sigRow}>
-            <View style={s.sigBox}>
-              <View style={s.sigLine} />
-              <Text style={s.sigLabel}>담당 강사 서명</Text>
+          <View style={S.sigRow}>
+            <View style={S.sigBox}>
+              <View style={S.sigLn} />
+              <Text style={S.sigLbl}>담당 강사 서명</Text>
             </View>
-            <View style={s.sigBox}>
-              <View style={s.sigLine} />
-              <Text style={s.sigLabel}>원장 확인</Text>
+            <View style={S.sigBox}>
+              <View style={S.sigLn} />
+              <Text style={S.sigLbl}>원장 확인</Text>
             </View>
           </View>
 
-          <Text style={s.footer}>
+          <Text style={S.footer}>
             본 레포트는 영어홀릭 어취브먼트 테스트 레포트 시스템에서 자동 생성되었습니다.
           </Text>
         </View>
@@ -363,14 +347,25 @@ export function ReportDocument({ report }: { report: Report }) {
   )
 }
 
+// ── Download helper ────────────────────────────────────────────
 export async function downloadReportPDF(report: Report) {
+  // Register fonts with absolute URL (resolves correctly in browser + workers)
+  const base = typeof window !== 'undefined' ? window.location.origin : ''
+  Font.register({
+    family: 'NotoSansKR',
+    fonts: [
+      { src: `${base}/fonts/NotoSansKR-Regular.ttf`, fontWeight: 400 },
+      { src: `${base}/fonts/NotoSansKR-Bold.ttf`,    fontWeight: 700 },
+    ],
+  })
+
   const { name, testName } = report.student
-  const grade = totalScoreGrade(report.totalScore)
-  const blob = await pdf(<ReportDocument report={report} />).toBlob()
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${name}_${testName}_${grade}.pdf`
+  const g = grade(report.totalScore)
+  const blob = await pdf(<ReportDoc report={report} />).toBlob()
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `${name}_${testName}_${g}.pdf`
   a.click()
   URL.revokeObjectURL(url)
 }
