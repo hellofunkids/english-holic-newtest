@@ -43,106 +43,106 @@ const S = StyleSheet.create({
   page: { fontFamily: 'NotoSansKR', backgroundColor: WHITE },
 
   // header
-  hdr:  { backgroundColor: NAVY, paddingHorizontal: 28, paddingTop: 22, paddingBottom: 18 },
+  hdr:  { backgroundColor: NAVY, paddingHorizontal: 30, paddingTop: 26, paddingBottom: 22 },
   hRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  hBadge: { fontSize: 7.5, color: GOLD, fontWeight: 700, letterSpacing: 1.5, marginBottom: 5 },
-  hTitle: { fontSize: 20, color: WHITE, fontWeight: 700 },
-  hSub:   { fontSize: 9, color: '#C0D0F0', marginTop: 3 },
+  hBadge: { fontSize: 10, color: GOLD, fontWeight: 700, letterSpacing: 1.5, marginBottom: 7 },
+  hTitle: { fontSize: 26, color: WHITE, fontWeight: 700 },
+  hSub:   { fontSize: 12, color: '#C0D0F0', marginTop: 4 },
   gBadge: {
-    width: 54, height: 54, borderRadius: 10,
+    width: 64, height: 64, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2,
   },
-  gText: { fontSize: 24, fontWeight: 700 },
-  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 14 },
-  infoItem: { width: '50%', flexDirection: 'row', marginBottom: 5 },
-  infoLbl: { fontSize: 8.5, color: '#B0C4DE', width: 38 },
-  infoVal: { fontSize: 8.5, color: WHITE, fontWeight: 700 },
+  gText: { fontSize: 30, fontWeight: 700 },
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16 },
+  infoItem: { width: '50%', flexDirection: 'row', marginBottom: 7 },
+  infoLbl: { fontSize: 11, color: '#B0C4DE', width: 46 },
+  infoVal: { fontSize: 11, color: WHITE, fontWeight: 700 },
 
   // body
-  body: { paddingHorizontal: 28, paddingTop: 18 },
+  body: { paddingHorizontal: 30, paddingTop: 20 },
 
   // score row
-  sRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 14 },
+  sRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 22, gap: 16 },
   sLeft:  { flex: 1, alignItems: 'center' },
   sRight: { flex: 1, alignItems: 'center' },
 
   // score circle
   sCirc: {
-    width: 110, height: 110, borderRadius: 55,
+    width: 130, height: 130, borderRadius: 65,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 5,
+    borderWidth: 6,
   },
-  sNum:  { fontSize: 34, fontWeight: 700, lineHeight: 1 },
-  sDen:  { fontSize: 9, color: GRAY5, marginTop: 2 },
-  sGrd:  { fontSize: 13, fontWeight: 700, marginTop: 8 },
-  sLbl:  { fontSize: 9, color: GRAY5, marginTop: 2 },
+  sNum:  { fontSize: 44, fontWeight: 700, lineHeight: 1 },
+  sDen:  { fontSize: 12, color: GRAY5, marginTop: 3 },
+  sGrd:  { fontSize: 17, fontWeight: 700, marginTop: 10 },
+  sLbl:  { fontSize: 11, color: GRAY5, marginTop: 3 },
 
   // score legend
-  hexLeg: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 6, justifyContent: 'center', paddingHorizontal: 4 },
-  legItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  legDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: GOLD },
-  legTxt:  { fontSize: 8, color: NAVY, fontWeight: 700 },
+  hexLeg: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, justifyContent: 'center', paddingHorizontal: 4 },
+  legItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legDot:  { width: 7, height: 7, borderRadius: 4, backgroundColor: GOLD },
+  legTxt:  { fontSize: 10, color: NAVY, fontWeight: 700 },
 
   // section
-  sec:   { marginBottom: 16 },
-  secT:  { fontSize: 13, fontWeight: 700, color: NAVY, borderBottomWidth: 2, borderBottomColor: GOLD, paddingBottom: 5, marginBottom: 10 },
+  sec:   { marginBottom: 20 },
+  secT:  { fontSize: 16, fontWeight: 700, color: NAVY, borderBottomWidth: 2, borderBottomColor: GOLD, paddingBottom: 6, marginBottom: 12 },
 
   // bars
-  bRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  bKo:   { width: 55, fontSize: 10, fontWeight: 700, color: GRAY7 },
-  bEn:   { width: 48, fontSize: 8, color: GRAY5 },
-  bTrack:{ flex: 1, height: 9, backgroundColor: '#F3F4F6', borderRadius: 5, overflow: 'hidden' },
-  bFill: { height: 9, borderRadius: 5 },
-  bBadge:{ marginLeft: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 },
-  bBTxt: { fontSize: 7.5, fontWeight: 700 },
-  bSc:   { width: 26, fontSize: 11, fontWeight: 700, textAlign: 'right' },
+  bRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  bKo:   { width: 62, fontSize: 12, fontWeight: 700, color: GRAY7 },
+  bEn:   { width: 52, fontSize: 10, color: GRAY5 },
+  bTrack:{ flex: 1, height: 12, backgroundColor: '#F3F4F6', borderRadius: 6, overflow: 'hidden' },
+  bFill: { height: 12, borderRadius: 6 },
+  bBadge:{ marginLeft: 6, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 10 },
+  bBTxt: { fontSize: 9, fontWeight: 700 },
+  bSc:   { width: 30, fontSize: 13, fontWeight: 700, textAlign: 'right' },
 
   // summary
-  smBox: { backgroundColor: NAVY50, borderLeftWidth: 4, borderLeftColor: NAVY, borderRadius: 6, padding: 12 },
-  smTxt: { fontSize: 10, color: GRAY7, lineHeight: 1.7 },
+  smBox: { backgroundColor: NAVY50, borderLeftWidth: 5, borderLeftColor: NAVY, borderRadius: 8, padding: 16 },
+  smTxt: { fontSize: 14, color: GRAY7, lineHeight: 1.8 },
 
   // 2-col
-  cols:  { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  col:   { flex: 1, borderRadius: 8, padding: 12 },
-  colT:  { fontSize: 11, fontWeight: 700, marginBottom: 7 },
-  colLi: { flexDirection: 'row', marginBottom: 5, gap: 4 },
-  colN:  { fontSize: 9.5, fontWeight: 700 },
-  colTx: { fontSize: 9.5, color: GRAY7, flex: 1, lineHeight: 1.55 },
+  cols:  { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  col:   { flex: 1, borderRadius: 8, padding: 14 },
+  colT:  { fontSize: 15, fontWeight: 700, marginBottom: 10 },
+  colLi: { flexDirection: 'row', marginBottom: 7, gap: 5 },
+  colN:  { fontSize: 13, fontWeight: 700 },
+  colTx: { fontSize: 13, color: GRAY7, flex: 1, lineHeight: 1.6 },
 
   // style box
-  stBox: { borderWidth: 1, borderColor: GRAY2, borderRadius: 8, padding: 12, flexDirection: 'row', gap: 10 },
-  stTit: { fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 },
-  stTxt: { fontSize: 9.5, color: GRAY7, lineHeight: 1.65 },
+  stBox: { borderWidth: 1, borderColor: GRAY2, borderRadius: 8, padding: 14, flexDirection: 'row', gap: 12 },
+  stTit: { fontSize: 16, fontWeight: 700, color: NAVY, marginBottom: 6 },
+  stTxt: { fontSize: 13, color: GRAY7, lineHeight: 1.7 },
 
   // chips
-  chipW: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  chip:  { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 },
-  chipT: { fontSize: 8.5, color: '#DC2626', fontWeight: 700 },
+  chipW: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  chip:  { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  chipT: { fontSize: 12, color: '#DC2626', fontWeight: 700 },
 
   // strategy
-  strBox: { backgroundColor: NAVY2, borderRadius: 8, padding: 14 },
-  strT:   { fontSize: 11, fontWeight: 700, color: GOLD, marginBottom: 8 },
-  strTx:  { fontSize: 9.5, color: '#C0D0F0', lineHeight: 1.85 },
+  strBox: { backgroundColor: NAVY2, borderRadius: 8, padding: 18 },
+  strT:   { fontSize: 15, fontWeight: 700, color: GOLD, marginBottom: 10 },
+  strTx:  { fontSize: 13, color: '#C0D0F0', lineHeight: 1.9 },
 
   // comment
-  cmBox: { borderWidth: 2, borderColor: '#E8CC7A', borderRadius: 8, padding: 14, backgroundColor: '#FFFDF5' },
-  cmT:   { fontSize: 11, fontWeight: 700, color: '#A88830', marginBottom: 6 },
-  cmTx:  { fontSize: 9.5, color: GRAY7, lineHeight: 1.7 },
+  cmBox: { borderWidth: 2, borderColor: '#E8CC7A', borderRadius: 8, padding: 16, backgroundColor: '#FFFDF5' },
+  cmT:   { fontSize: 15, fontWeight: 700, color: '#A88830', marginBottom: 8 },
+  cmTx:  { fontSize: 13, color: GRAY7, lineHeight: 1.8 },
 
   // sig
-  sigRow: { flexDirection: 'row', gap: 20, marginTop: 10, marginBottom: 8 },
+  sigRow: { flexDirection: 'row', gap: 24, marginTop: 14, marginBottom: 10 },
   sigBox: { flex: 1, alignItems: 'center' },
-  sigLn:  { borderBottomWidth: 1.5, borderBottomColor: GRAY2, borderStyle: 'dashed', width: '100%', height: 36, marginBottom: 4 },
-  sigLbl: { fontSize: 8.5, color: GRAY5, textAlign: 'center' },
+  sigLn:  { borderBottomWidth: 1.5, borderBottomColor: GRAY2, borderStyle: 'dashed', width: '100%', height: 44, marginBottom: 6 },
+  sigLbl: { fontSize: 11, color: GRAY5, textAlign: 'center' },
 
-  footer: { fontSize: 7.5, color: GRAY2, textAlign: 'center', marginTop: 6, marginBottom: 20 },
+  footer: { fontSize: 10, color: GRAY2, textAlign: 'center', marginTop: 8, marginBottom: 24 },
 })
 
 // ── Hexagon SVG ────────────────────────────────────────────────
 function HexSvg({ scores }: { scores: Scores }) {
-  const W = 190, H = 178
-  const cx = 95, cy = 86, R = 60
+  const W = 240, H = 224
+  const cx = 120, cy = 108, R = 76
   const n = DOMAINS.length
   const angles = DOMAINS.map((_, i) => Math.PI / 2 - (2 * Math.PI * i) / n)
 
