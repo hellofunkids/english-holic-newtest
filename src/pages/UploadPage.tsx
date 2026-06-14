@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import FileUploader from '../components/FileUploader'
 import StudentInfoForm from '../components/StudentInfoForm'
 import { compressImage } from '../lib/utils'
+import { storeImages } from '../lib/imageStore'
 import type { UploadedFile, StudentInfo } from '../types'
 
 const EMPTY_STUDENT: StudentInfo = {
@@ -56,7 +57,7 @@ export default function UploadPage() {
           return
         }
       }
-      sessionStorage.setItem('eh-images', JSON.stringify(compressed))
+      await storeImages(compressed)
       sessionStorage.setItem('eh-student', JSON.stringify(student))
       navigate('/analyzing')
     } catch (e) {

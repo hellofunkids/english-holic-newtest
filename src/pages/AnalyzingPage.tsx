@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { StudentInfo } from '../types'
+import { loadImages, clearImages } from '../lib/imageStore'
 
 const STEPS = [
   { label: '이미지 분석 중...', sub: 'AI가 시험지를 읽고 있습니다' },
@@ -19,30 +20,22 @@ export default function AnalyzingPage() {
     if (called.current) return
     called.current = true
 
-    let images: string[] = []
-    let student: StudentInfo | null = null
-
-    try {
-      const imagesRaw = sessionStorage.getItem('eh-images')
-      const studentRaw = sessionStorage.getItem('eh-student')
-      if (!imagesRaw || !studentRaw) { navigate('/'); return }
-      images = JSON.parse(imagesRaw) as string[]
-      student = JSON.parse(studentRaw) as StudentInfo
-    } catch {
-      navigate('/')
-      return
-    }
-
-    if (!images.length || !student) { navigate('/'); return }
-
     const t1 = setTimeout(() => setStep(1), 5000)
     const t2 = setTimeout(() => setStep(2), 20000)
-
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 55000)
 
     async function run() {
       try {
+        // Read student from sessionStorage (small, safe)
+        const studentRaw = sessionStorage.getItem('eh-student')
+        if (!studentRaw) { navigate('/'); return }
+        const student = JSON.parse(studentRaw) as StudentInfo
+
+        // Read images from IndexedDB (no size limit)
+        const images = await loadImages()
+        if (!images?.length) { navigate('/'); return }
+
         const res = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -63,14 +56,14 @@ export default function AnalyzingPage() {
 
         const report = await res.json()
         setStep(3)
-        sessionStorage.removeItem('eh-images')
+        await clearImages()
         sessionStorage.setItem('eh-report', JSON.stringify({ ...report, student }))
         setTimeout(() => navigate('/result'), 800)
 
       } catch (err) {
         clearTimeout(t1); clearTimeout(t2); clearTimeout(timeout)
         if (err instanceof Error && err.name === 'AbortError') {
-          setError('분석 시간이 초과되었습니다 (55초). 이미지를 줄이고 다시 시도해주세요.')
+          setError('분석 시간이 초과되었습니다 (55초). 이미지 장수를 줄이고 다시 시도해주세요.')
         } else {
           setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.')
         }
@@ -86,9 +79,9 @@ export default function AnalyzingPage() {
       <div className="min-h-screen bg-navy-50 flex flex-col items-center justify-center px-6 text-center">
         <div className="text-5xl mb-6">😔</div>
         <h2 className="text-lg font-extrabold text-navy mb-2">분석 중 오류가 발생했습니다</h2>
-        <p className="text-sm text-gray-600 mb-2 max-w-xs font-mono bg-gray-100 rounded-xl px-4 py-2">{error}</p>
+        <p className="text-sm text-gray-600 mb-2 max-w-xs font-mono bg-gray-100 rounded-xl px-4 py-2 break-words">{error}</p>
         <p className="text-xs text-gray-400 mb-6 max-w-xs">
-          위 오류 메시지를 캡처해서 전달해주시면 빠르게 수정할 수 있습니다.
+          위 오류 메시지를 알려주시면 빠르게 수정할 수 있습니다.
         </p>
         <button onClick={() => navigate('/upload')} className="btn-gold w-full max-w-xs">
           다시 시도하기
