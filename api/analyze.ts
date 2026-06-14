@@ -78,10 +78,14 @@ function fallback(s: StudentInfo): AnalysisData {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
+  if (!req.body) {
+    return res.status(413).json({ error: '요청이 너무 큽니다. 이미지를 줄이거나 장수를 줄여주세요.' })
+  }
+
   const { images, student } = req.body as { images: string[]; student: StudentInfo }
 
   if (!images?.length || !student?.name) {
-    return res.status(400).json({ error: '이미지와 학생 정보가 필요합니다.' })
+    return res.status(400).json({ error: '이미지와 학생 정보가 필요합니다. 다시 시도해주세요.' })
   }
 
   const apiKey = process.env.OPENAI_API_KEY

@@ -46,8 +46,12 @@ export default function AnalyzingPage() {
         clearTimeout(t2)
 
         if (!res.ok) {
-          const { error: msg } = await res.json() as { error: string }
-          throw new Error(msg ?? 'API error')
+          let msg = `서버 오류 (HTTP ${res.status})`
+          try {
+            const body = await res.json() as { error?: string }
+            if (body.error) msg = body.error
+          } catch {}
+          throw new Error(msg)
         }
 
         const report = await res.json()
