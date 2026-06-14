@@ -5,46 +5,51 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function compressImage(file: File, maxPx = 512, quality = 0.6): Promise<string> {
-  // createImageBitmap handles HEIC/HEIF natively on iOS 15+,
-  // and is more reliable than <img> tag approach
-  let bitmap: ImageBitmap
-  try {
-    bitmap = await createImageBitmap(file)
-  } catch {
-    // Fallback: load via <img> tag (older iOS, some Android)
-    bitmap = await new Promise<ImageBitmap>((resolve, reject) => {
-      const img = new Image()
-      const url = URL.createObjectURL(file)
-      img.onload = () => {
-        URL.revokeObjectURL(url)
-        createImageBitmap(img).then(resolve).catch(reject)
-      }
-      img.onerror = () => {
-        URL.revokeObjectURL(url)
-        reject(new Error(
-          `이미지를 열 수 없습니다. 파일: ${file.name} (${file.type || '알 수 없는 형식'}, ${(file.size / 1024 / 1024).toFixed(1)}MB)`
-        ))
-      }
-      img.src = url
-    })
-  }
-
-  const scale = Math.min(maxPx / bitmap.width, maxPx / bitmap.height, 1)
-  const w = Math.round(bitmap.width * scale)
-  const h = Math.round(bitmap.height * scale)
-
+function drawToJpeg(source: CanvasImageSource, srcW: number, srcH: number, maxPx: number, quality: number): string {
+  const scale = Math.min(maxPx / srcW, maxPx / srcH, 1)
+  const w = Math.round(srcW * scale)
+  const h = Math.round(srcH * scale)
   const canvas = document.createElement('canvas')
   canvas.width = w
   canvas.height = h
   const ctx = canvas.getContext('2d')
-  if (!ctx) {
-    bitmap.close()
-    throw new Error('Canvas를 사용할 수 없습니다.')
-  }
-  ctx.drawImage(bitmap, 0, 0, w, h)
-  bitmap.close()
+  if (!ctx) throw new Error('Canvas를 사용할 수 없습니다.')
+  ctx.drawImage(source, 0, 0, w, h)
   return canvas.toDataURL('image/jpeg', quality)
+}
+
+export async function compressImage(file: File, maxPx = 512, quality = 0.6): Promise<string> {
+  // 1차 시도: createImageBitmap (JPEG/PNG/WebP에 빠름, HEIC는 실패할 수 있음)
+  try {
+    const bitmap = await createImageBitmap(file)
+    const result = drawToJpeg(bitmap, bitmap.width, bitmap.height, maxPx, quality)
+    bitmap.close()
+    return result
+  } catch {
+    // HEIC 등 미지원 포맷 → <img> 태그로 재시도
+  }
+
+  // 2차 시도: <img> 태그 (iOS Safari가 HEIC를 네이티브로 렌더링함)
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      try {
+        resolve(drawToJpeg(img, img.naturalWidth, img.naturalHeight, maxPx, quality))
+      } catch (e) {
+        reject(e)
+      }
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error(
+        `이 이미지 형식은 지원하지 않습니다 (${file.type || 'unknown'}, ${(file.size / 1024 / 1024).toFixed(1)}MB). ` +
+        `갤러리 앱에서 JPEG로 내보낸 후 다시 시도해주세요.`
+      ))
+    }
+    img.src = url
+  })
 }
 
 export function scoreColor(score: number): string {
