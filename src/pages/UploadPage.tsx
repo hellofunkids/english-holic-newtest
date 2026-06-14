@@ -37,6 +37,11 @@ export default function UploadPage() {
     }
 
     setCompressing(true)
+    // Clear previous session data to avoid storage quota issues
+    sessionStorage.removeItem('eh-images')
+    sessionStorage.removeItem('eh-student')
+    sessionStorage.removeItem('eh-report')
+
     try {
       const compressed: string[] = []
       for (let i = 0; i < imageFiles.length; i++) {
@@ -56,7 +61,7 @@ export default function UploadPage() {
       navigate('/analyzing')
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류'
-      setError(`이미지 저장 오류: ${msg} — 이미지를 줄여서 다시 시도해주세요.`)
+      setError(`저장 오류: ${msg}`)
       setCompressing(false)
     }
   }

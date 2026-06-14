@@ -6,35 +6,45 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export async function compressImage(file: File, maxPx = 512, quality = 0.6): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const scale = Math.min(maxPx / img.width, maxPx / img.height, 1)
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { reject(new Error('Canvas를 지원하지 않는 브라우저입니다.')); return }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      resolve(canvas.toDataURL('image/jpeg', quality))
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      // Canvas가 이미지를 읽지 못한 경우 (드문 포맷)
-      // 파일이 5MB 초과면 sessionStorage에 넣을 수 없으므로 거부
-      if (file.size > 5 * 1024 * 1024) {
-        reject(new Error(`지원하지 않는 이미지 형식이거나 파일이 너무 큽니다 (${(file.size / 1024 / 1024).toFixed(1)}MB). JPEG로 저장 후 다시 시도해주세요.`))
-        return
+  // createImageBitmap handles HEIC/HEIF natively on iOS 15+,
+  // and is more reliable than <img> tag approach
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    // Fallback: load via <img> tag (older iOS, some Android)
+    bitmap = await new Promise<ImageBitmap>((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        createImageBitmap(img).then(resolve).catch(reject)
       }
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(new Error('이미지를 읽을 수 없습니다.'))
-      reader.readAsDataURL(file)
-    }
-    img.src = url
-  })
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error(
+          `이미지를 열 수 없습니다. 파일: ${file.name} (${file.type || '알 수 없는 형식'}, ${(file.size / 1024 / 1024).toFixed(1)}MB)`
+        ))
+      }
+      img.src = url
+    })
+  }
+
+  const scale = Math.min(maxPx / bitmap.width, maxPx / bitmap.height, 1)
+  const w = Math.round(bitmap.width * scale)
+  const h = Math.round(bitmap.height * scale)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    bitmap.close()
+    throw new Error('Canvas를 사용할 수 없습니다.')
+  }
+  ctx.drawImage(bitmap, 0, 0, w, h)
+  bitmap.close()
+  return canvas.toDataURL('image/jpeg', quality)
 }
 
 export function scoreColor(score: number): string {
