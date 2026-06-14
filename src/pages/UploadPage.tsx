@@ -40,7 +40,7 @@ export default function UploadPage() {
     try {
       const compressed: string[] = []
       for (const f of imageFiles) {
-        const b64 = await compressImage(f.file, 1024, 0.8)
+        const b64 = await compressImage(f.file, 800, 0.7)
         compressed.push(b64)
       }
       sessionStorage.setItem('eh-images', JSON.stringify(compressed))

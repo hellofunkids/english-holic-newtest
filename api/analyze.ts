@@ -85,46 +85,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.' })
-  }
-
   let result: AnalysisData
 
-  try {
-    const client = new OpenAI({ apiKey })
-
-    // Build image content blocks
-    const imageContent: OpenAI.Chat.ChatCompletionContentPart[] = images.map(img => ({
-      type: 'image_url',
-      image_url: { url: img, detail: 'high' },
-    }))
-
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: buildPrompt(student) },
-            ...imageContent,
-          ],
-        },
-      ],
-    })
-
-    const text = response.choices[0]?.message?.content ?? ''
-
+  if (!apiKey) {
+    console.error('OPENAI_API_KEY is not set in Vercel environment variables')
+    result = fallback(student)
+  } else {
     try {
-      result = parseResponse(text)
-    } catch {
-      console.error('Parse failed, using fallback. Raw:', text.slice(0, 300))
+      const client = new OpenAI({ apiKey })
+
+      const imageContent: OpenAI.Chat.ChatCompletionContentPart[] = images.map(img => ({
+        type: 'image_url' as const,
+        image_url: { url: img, detail: 'auto' as const },
+      }))
+
+      const response = await client.chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 2000,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: buildPrompt(student) },
+              ...imageContent,
+            ],
+          },
+        ],
+      })
+
+      const text = response.choices[0]?.message?.content ?? ''
+
+      try {
+        result = parseResponse(text)
+      } catch {
+        console.error('Parse failed, using fallback. Raw:', text.slice(0, 300))
+        result = fallback(student)
+      }
+    } catch (err) {
+      console.error('OpenAI error:', err)
       result = fallback(student)
     }
-  } catch (err) {
-    console.error('OpenAI error:', err)
-    result = fallback(student)
   }
 
   const totalScore = Math.round(
