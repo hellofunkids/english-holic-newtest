@@ -18,38 +18,56 @@ function drawToJpeg(source: CanvasImageSource, srcW: number, srcH: number, maxPx
   return canvas.toDataURL('image/jpeg', quality)
 }
 
-export async function compressImage(file: File, maxPx = 512, quality = 0.6): Promise<string> {
-  // 1차 시도: createImageBitmap (JPEG/PNG/WebP에 빠름, HEIC는 실패할 수 있음)
+function isHeic(file: File): boolean {
+  return (
+    file.type === 'image/heic' ||
+    file.type === 'image/heif' ||
+    /\.(heic|heif)$/i.test(file.name)
+  )
+}
+
+async function blobToJpeg(blob: Blob, maxPx: number, quality: number): Promise<string> {
+  // Try createImageBitmap first (fast path for JPEG/PNG/WebP)
   try {
-    const bitmap = await createImageBitmap(file)
+    const bitmap = await createImageBitmap(blob)
     const result = drawToJpeg(bitmap, bitmap.width, bitmap.height, maxPx, quality)
     bitmap.close()
     return result
   } catch {
-    // HEIC 등 미지원 포맷 → <img> 태그로 재시도
+    // Fallback: <img> tag
   }
-
-  // 2차 시도: <img> 태그 (iOS Safari가 HEIC를 네이티브로 렌더링함)
   return new Promise((resolve, reject) => {
     const img = new Image()
-    const url = URL.createObjectURL(file)
+    const url = URL.createObjectURL(blob)
     img.onload = () => {
       URL.revokeObjectURL(url)
-      try {
-        resolve(drawToJpeg(img, img.naturalWidth, img.naturalHeight, maxPx, quality))
-      } catch (e) {
-        reject(e)
-      }
+      try { resolve(drawToJpeg(img, img.naturalWidth, img.naturalHeight, maxPx, quality)) }
+      catch (e) { reject(e) }
     }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error(
-        `이 이미지 형식은 지원하지 않습니다 (${file.type || 'unknown'}, ${(file.size / 1024 / 1024).toFixed(1)}MB). ` +
-        `갤러리 앱에서 JPEG로 내보낸 후 다시 시도해주세요.`
-      ))
-    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 렌더링 실패')) }
     img.src = url
   })
+}
+
+export async function compressImage(file: File, maxPx = 512, quality = 0.6): Promise<string> {
+  // HEIC/HEIF: convert to JPEG first using heic2any (pure JS decoder)
+  if (isHeic(file)) {
+    try {
+      const heic2any = (await import('heic2any')).default as (
+        opts: { blob: Blob; toType: string; quality?: number }
+      ) => Promise<Blob | Blob[]>
+      const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.95 })
+      const jpeg = Array.isArray(out) ? out[0] : out
+      return blobToJpeg(jpeg, maxPx, quality)
+    } catch (e) {
+      throw new Error(
+        `HEIC 변환 실패: ${e instanceof Error ? e.message : String(e)}. ` +
+        `카메라 앱 대신 갤러리 앱에서 JPEG로 내보내거나, 카메라 설정에서 "가장 호환성 높은 포맷"(JPEG)으로 변경해주세요.`
+      )
+    }
+  }
+
+  return blobToJpeg(file, maxPx, quality)
 }
 
 export function scoreColor(score: number): string {
