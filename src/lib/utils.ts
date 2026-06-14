@@ -50,21 +50,37 @@ async function blobToJpeg(blob: Blob, maxPx: number, quality: number): Promise<s
 }
 
 export async function compressImage(file: File, maxPx = 512, quality = 0.6): Promise<string> {
-  // HEIC/HEIF: convert to JPEG first using heic2any (pure JS decoder)
   if (isHeic(file)) {
+    // Method 1: heic2any — pure-JS HEIC decoder
     try {
-      const heic2any = (await import('heic2any')).default as (
+      const mod = await import('heic2any')
+      const fn = (mod.default ?? mod) as (
         opts: { blob: Blob; toType: string; quality?: number }
       ) => Promise<Blob | Blob[]>
-      const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.95 })
+      const out = await fn({ blob: file, toType: 'image/jpeg', quality: 0.92 })
       const jpeg = Array.isArray(out) ? out[0] : out
       return blobToJpeg(jpeg, maxPx, quality)
     } catch (e) {
-      throw new Error(
-        `HEIC 변환 실패: ${e instanceof Error ? e.message : String(e)}. ` +
-        `카메라 앱 대신 갤러리 앱에서 JPEG로 내보내거나, 카메라 설정에서 "가장 호환성 높은 포맷"(JPEG)으로 변경해주세요.`
-      )
+      // heic2any throws plain objects: { code, message }
+      const detail = (e != null && typeof e === 'object' && 'message' in e)
+        ? String((e as { message: unknown }).message)
+        : JSON.stringify(e)
+      console.warn('heic2any failed:', detail)
+      // Fall through to Method 2
     }
+
+    // Method 2: native <img> tag (works on some iOS versions)
+    try {
+      return await blobToJpeg(file, maxPx, quality)
+    } catch {
+      // Fall through to final error
+    }
+
+    throw new Error(
+      'HEIC 이미지를 변환할 수 없습니다.\n' +
+      '해결 방법: iPhone 설정 → 카메라 → 포맷 → "가장 호환성 높은 포맷" 선택 후 다시 찍어주세요.\n' +
+      '또는 앱의 카메라 버튼(📷)으로 직접 촬영하면 JPEG로 저장됩니다.'
+    )
   }
 
   return blobToJpeg(file, maxPx, quality)
