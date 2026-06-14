@@ -39,15 +39,24 @@ export default function UploadPage() {
     setCompressing(true)
     try {
       const compressed: string[] = []
-      for (const f of imageFiles) {
-        const b64 = await compressImage(f.file, 512, 0.6)
-        compressed.push(b64)
+      for (let i = 0; i < imageFiles.length; i++) {
+        const f = imageFiles[i]
+        try {
+          const b64 = await compressImage(f.file, 512, 0.6)
+          compressed.push(b64)
+        } catch (imgErr) {
+          const msg = imgErr instanceof Error ? imgErr.message : '알 수 없는 오류'
+          setError(`이미지 ${i + 1}번 처리 실패: ${msg}`)
+          setCompressing(false)
+          return
+        }
       }
       sessionStorage.setItem('eh-images', JSON.stringify(compressed))
       sessionStorage.setItem('eh-student', JSON.stringify(student))
       navigate('/analyzing')
-    } catch {
-      setError('이미지 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '알 수 없는 오류'
+      setError(`이미지 저장 오류: ${msg} — 이미지를 줄여서 다시 시도해주세요.`)
       setCompressing(false)
     }
   }

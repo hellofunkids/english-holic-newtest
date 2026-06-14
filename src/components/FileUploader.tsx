@@ -120,7 +120,7 @@ export default function FileUploader({ files, onChange }: Props) {
 
       {/* Hidden inputs */}
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleInputChange} />
-      <input ref={galleryRef} type="file" accept="image/*,.heic,.heif" multiple className="hidden" onChange={handleInputChange} />
+      <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleInputChange} />
       <input ref={pdfRef} type="file" accept="application/pdf" className="hidden" onChange={handleInputChange} />
 
       {/* Thumbnail grid */}
