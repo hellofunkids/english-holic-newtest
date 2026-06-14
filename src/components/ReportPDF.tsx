@@ -203,7 +203,7 @@ function ReportDoc({ report }: { report: Report }) {
           <View style={S.infoGrid}>
             <View style={S.infoItem}><Text style={S.infoLbl}>학생</Text><Text style={S.infoVal}>{st.name}</Text></View>
             <View style={S.infoItem}><Text style={S.infoLbl}>학년</Text><Text style={S.infoVal}>{st.grade}</Text></View>
-            <View style={S.infoItem}><Text style={S.infoLbl}>학교</Text><Text style={S.infoLbl}><Text style={S.infoVal}>{st.school}</Text></Text></View>
+            <View style={S.infoItem}><Text style={S.infoLbl}>학교</Text><Text style={S.infoVal}>{st.school}</Text></View>
             <View style={S.infoItem}><Text style={S.infoLbl}>테스트</Text><Text style={S.infoVal}>{st.testName}</Text></View>
             {st.instructor ? <View style={S.infoItem}><Text style={S.infoLbl}>강사</Text><Text style={S.infoVal}>{st.instructor}</Text></View> : null}
             {st.testDate   ? <View style={S.infoItem}><Text style={S.infoLbl}>날짜</Text><Text style={S.infoVal}>{st.testDate}</Text></View> : null}
