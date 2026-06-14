@@ -4,17 +4,24 @@ import Header from '../components/Header'
 import ReportContent from '../components/ReportContent'
 import type { Report } from '../types'
 import { totalScoreGrade } from '../lib/utils'
+import { saveLocalReport } from '../lib/history'
 
 export default function ResultPage() {
   const navigate = useNavigate()
   const reportRef = useRef<HTMLDivElement>(null)
   const [report, setReport] = useState<Report | null>(null)
   const [downloading, setDownloading] = useState(false)
+  const savedRef = useRef(false)
 
   useEffect(() => {
     const raw = sessionStorage.getItem('eh-report')
     if (!raw) { navigate('/'); return }
-    setReport(JSON.parse(raw) as Report)
+    const r = JSON.parse(raw) as Report
+    setReport(r)
+    if (!savedRef.current) {
+      savedRef.current = true
+      saveLocalReport(r)
+    }
   }, [navigate])
 
   async function handleDownloadPDF() {
