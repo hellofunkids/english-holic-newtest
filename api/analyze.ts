@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 
 export const config = {
@@ -84,28 +84,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: '이미지와 학생 정보가 필요합니다.' })
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.' })
+    return res.status(500).json({ error: 'OPENAI_API_KEY가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.' })
   }
 
   let result: AnalysisData
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' })
+    const client = new OpenAI({ apiKey })
 
-    type Part = { text: string } | { inlineData: { mimeType: string; data: string } }
-    const parts: Part[] = [{ text: buildPrompt(student) }]
+    // Build image content blocks
+    const imageContent: OpenAI.Chat.ChatCompletionContentPart[] = images.map(img => ({
+      type: 'image_url',
+      image_url: { url: img, detail: 'high' },
+    }))
 
-    for (const img of images) {
-      const mimeType = img.includes('data:image/png') ? 'image/png' : 'image/jpeg'
-      const data = img.replace(/^data:image\/\w+;base64,/, '')
-      parts.push({ inlineData: { mimeType, data } })
-    }
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: buildPrompt(student) },
+            ...imageContent,
+          ],
+        },
+      ],
+    })
 
-    const resp = await model.generateContent(parts)
-    const text = resp.response.text()
+    const text = response.choices[0]?.message?.content ?? ''
 
     try {
       result = parseResponse(text)
@@ -114,7 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       result = fallback(student)
     }
   } catch (err) {
-    console.error('Gemini error:', err)
+    console.error('OpenAI error:', err)
     result = fallback(student)
   }
 
